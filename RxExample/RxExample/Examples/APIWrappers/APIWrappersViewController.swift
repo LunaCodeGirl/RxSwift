@@ -3,7 +3,7 @@
 //  RxExample
 //
 //  Created by Carlos García on 8/7/15.
-//  Copyright (c) 2015 Krunoslav Zaher. All rights reserved.
+//  Copyright © 2015 Krunoslav Zaher. All rights reserved.
 //
 
 import UIKit
@@ -14,7 +14,7 @@ import RxCocoa
 #endif
 
 extension UILabel {
-    public override var accessibilityValue: String! {
+    open override var accessibilityValue: String! {
         get {
             return self.text
         }
@@ -39,6 +39,8 @@ class APIWrappersViewController: ViewController {
 
     @IBOutlet weak var switcher: UISwitch!
 
+    @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
+
     @IBOutlet weak var button: UIButton!
 
     @IBOutlet weak var slider: UISlider!
@@ -49,148 +51,123 @@ class APIWrappersViewController: ViewController {
 
     @IBOutlet weak var mypan: UIPanGestureRecognizer!
 
-    let disposeBag = DisposeBag()
+    @IBOutlet weak var textView: UITextView!
 
     let manager = CLLocationManager()
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        datePicker.date = NSDate(timeIntervalSince1970: 0)
-
-        let ash = UIActionSheet(title: "Title", delegate: nil, cancelButtonTitle: "Cancel", destructiveButtonTitle: "OK")
-        let av = UIAlertView(title: "Title", message: "The message", delegate: nil, cancelButtonTitle: "Cancel", otherButtonTitles: "OK", "Two", "Three", "Four", "Five")
-
-        openActionSheet.rx_tap
-            .subscribeNext { [unowned self] x in
-                ash.showInView(self.view)
-            }
-            .addDisposableTo(disposeBag)
-
-        openAlertView.rx_tap
-            .subscribeNext { x in
-                av.show()
-            }
-            .addDisposableTo(disposeBag)
-
-        // MARK: UIActionSheet
-
-        ash.rx_clickedButtonAtIndex
-            .subscribeNext { [weak self] x in
-                self?.debug("UIActionSheet clickedButtonAtIndex \(x)")
-            }
-            .addDisposableTo(disposeBag)
-
-        ash.rx_willDismissWithButtonIndex
-            .subscribeNext { [weak self] x in
-                self?.debug("UIActionSheet willDismissWithButtonIndex \(x)")
-            }
-            .addDisposableTo(disposeBag)
-
-        ash.rx_didDismissWithButtonIndex
-            .subscribeNext { [weak self] x in
-                self?.debug("UIActionSheet didDismissWithButtonIndex \(x)")
-            }
-            .addDisposableTo(disposeBag)
-
-
-        // MARK: UIAlertView
-
-        av.rx_clickedButtonAtIndex
-            .subscribeNext { [weak self] x in
-                self?.debug("UIAlertView clickedButtonAtIndex \(x)")
-            }
-            .addDisposableTo(disposeBag)
-
-        av.rx_willDismissWithButtonIndex
-            .subscribeNext { [weak self] x in
-                self?.debug("UIAlertView willDismissWithButtonIndex \(x)")
-            }
-            .addDisposableTo(disposeBag)
-
-        av.rx_didDismissWithButtonIndex
-            .subscribeNext { [weak self] x in
-                self?.debug("UIAlertView didDismissWithButtonIndex \(x)")
-            }
-            .addDisposableTo(disposeBag)
-
-
-
-
-
-
+        datePicker.date = Date(timeIntervalSince1970: 0)
 
         // MARK: UIBarButtonItem
 
-        bbitem.rx_tap
-            .subscribeNext { [weak self] x in
+        bbitem.rx.tap
+            .subscribe(onNext: { [weak self] x in
                 self?.debug("UIBarButtonItem Tapped")
-            }
-            .addDisposableTo(disposeBag)
+            })
+            .disposed(by: disposeBag)
 
         // MARK: UISegmentedControl
 
-        segmentedControl.rx_value
-            .subscribeNext { [weak self] x in
+        // also test two way binding
+        let segmentedValue = Variable(0)
+        _ = segmentedControl.rx.value <-> segmentedValue
+
+        segmentedValue.asObservable()
+            .subscribe(onNext: { [weak self] x in
                 self?.debug("UISegmentedControl value \(x)")
-            }
-            .addDisposableTo(disposeBag)
+            })
+            .disposed(by: disposeBag)
 
 
         // MARK: UISwitch
 
-        switcher.rx_value
-            .subscribeNext { [weak self] x in
-                self?.debug("UISwitch value \(x)")
-            }
-            .addDisposableTo(disposeBag)
+        // also test two way binding
+        let switchValue = Variable(true)
+        _ = switcher.rx.value <-> switchValue
 
+        switchValue.asObservable()
+            .subscribe(onNext: { [weak self] x in
+                self?.debug("UISwitch value \(x)")
+            })
+            .disposed(by: disposeBag)
+
+        // MARK: UIActivityIndicatorView
+
+        switcher.rx.value
+            .bind(to: activityIndicator.rx.isAnimating)
+            .disposed(by: disposeBag)
 
         // MARK: UIButton
 
-        button.rx_tap
-            .subscribeNext { [weak self] x in
+        button.rx.tap
+            .subscribe(onNext: { [weak self] x in
                 self?.debug("UIButton Tapped")
-            }
-            .addDisposableTo(disposeBag)
+            })
+            .disposed(by: disposeBag)
 
 
         // MARK: UISlider
 
-        slider.rx_value
-            .subscribeNext { [weak self] x in
+        // also test two way binding
+        let sliderValue = Variable<Float>(1.0)
+        _ = slider.rx.value <-> sliderValue
+
+        sliderValue.asObservable()
+            .subscribe(onNext: { [weak self] x in
                 self?.debug("UISlider value \(x)")
-            }
-            .addDisposableTo(disposeBag)
+            })
+            .disposed(by: disposeBag)
 
 
         // MARK: UIDatePicker
 
-        datePicker.rx_date
-            .subscribeNext { [weak self] x in
+        // also test two way binding
+        let dateValue = Variable(Date(timeIntervalSince1970: 0))
+        _ = datePicker.rx.date <-> dateValue
+
+
+        dateValue.asObservable()
+            .subscribe(onNext: { [weak self] x in
                 self?.debug("UIDatePicker date \(x)")
-            }
-            .addDisposableTo(disposeBag)
+            })
+            .disposed(by: disposeBag)
 
 
         // MARK: UITextField
 
-        textField.rx_text
-            .subscribeNext { [weak self] x in
+        // also test two way binding
+        let textValue = Variable("")
+        _ = textField.rx.textInput <-> textValue
+
+        textValue.asObservable()
+            .subscribe(onNext: { [weak self] x in
                 self?.debug("UITextField text \(x)")
-                self?.textField.resignFirstResponder()
-            }
-            .addDisposableTo(disposeBag)
+            })
+            .disposed(by: disposeBag)
 
 
         // MARK: UIGestureRecognizer
 
-        mypan.rx_event
-            .subscribeNext { [weak self] x in
+        mypan.rx.event
+            .subscribe(onNext: { [weak self] x in
                 self?.debug("UIGestureRecognizer event \(x.state)")
-            }
-            .addDisposableTo(disposeBag)
+            })
+            .disposed(by: disposeBag)
 
+
+        // MARK: UITextView
+
+        // also test two way binding
+        let textViewValue = Variable("")
+        _ = textView.rx.textInput <-> textViewValue
+
+        textViewValue.asObservable()
+            .subscribe(onNext: { [weak self] x in
+                self?.debug("UITextView text \(x)")
+            })
+            .disposed(by: disposeBag)
 
         // MARK: CLLocationManager
 
@@ -198,23 +175,22 @@ class APIWrappersViewController: ViewController {
         manager.requestWhenInUseAuthorization()
         #endif
 
-        manager.rx_didUpdateLocations
-            .subscribeNext { [weak self] x in
-                self?.debug("rx_didUpdateLocations \(x)")
-            }
-            .addDisposableTo(disposeBag)
+        manager.rx.didUpdateLocations
+            .subscribe(onNext: { x in
+                print("rx.didUpdateLocations \(x)")
+            })
+            .disposed(by: disposeBag)
 
-        _ = manager.rx_didFailWithError
-            .subscribeNext { [weak self] x in
-                self?.debug("rx_didFailWithError \(x)")
-            }
+        _ = manager.rx.didFailWithError
+            .subscribe(onNext: { x in
+                print("rx.didFailWithError \(x)")
+            })
         
-        
-        manager.rx_didChangeAuthorizationStatus
-            .subscribeNext { status in
+        manager.rx.didChangeAuthorizationStatus
+            .subscribe(onNext: { status in
                 print("Authorization status \(status)")
-            }
-            .addDisposableTo(disposeBag)
+            })
+            .disposed(by: disposeBag)
         
         manager.startUpdatingLocation()
 
@@ -222,7 +198,7 @@ class APIWrappersViewController: ViewController {
 
     }
 
-    func debug(string: String) {
+    func debug(_ string: String) {
         print(string)
         debugLabel.text = string
     }

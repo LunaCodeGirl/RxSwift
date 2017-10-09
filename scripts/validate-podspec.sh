@@ -3,6 +3,9 @@
 
 set -e
 
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+ESCAPED_SOURCE=$(pwd | sed -E "s/\//\\\\\//g")
+
 function cleanup {
   pushd ~/.cocoapods/repos/master
   git clean -d -f
@@ -13,26 +16,38 @@ function cleanup {
 trap cleanup EXIT
 
 VERSION=`cat RxSwift.podspec | grep -E "s.version\s+=" | cut -d '"' -f 2`
+TARGETS=(RxTest RxCocoa RxBlocking RxSwift)
+ROOTS=(2/e/c 3/c/1 8/5/5 a/b/1)
 
-pushd ~/.cocoapods/repos/master
-pushd Specs
-
-mkdir -p RxSwift/${VERSION}
-mkdir -p RxCocoa/${VERSION}
-mkdir -p RxBlocking/${VERSION}
-
+pushd ~/.cocoapods/repos/master/Specs
+for TARGET in ${TARGETS[@]}
+do
+  mkdir -p ${TARGET}/${VERSION}
+done
 popd
-popd
 
-cat RxSwift.podspec |
-sed -E "s/s.source[^\}]+\}/s.source           = { :git => '\/Users\/kzaher\/Projects\/Rx', :branch => \'develop\' }/" > ~/.cocoapods/repos/master/Specs/RxSwift/${VERSION}/RxSwift.podspec
+for TARGET in ${TARGETS[@]}
+do
 
-cat RxCocoa.podspec |
-sed -E "s/s.source[^\}]+\}/s.source           = { :git => '\/Users\/kzaher\/Projects\/Rx', :branch => \'develop\' }/" > ~/.cocoapods/repos/master/Specs/RxCocoa/${VERSION}/RxCocoa.podspec
 
-cat RxBlocking.podspec |
-sed -E "s/s.source[^\}]+\}/s.source           = { :git => '\/Users\/kzaher\/Projects\/Rx', :branch => \'develop\' }/" > ~/.cocoapods/repos/master/Specs/RxBlocking/${VERSION}/RxBlocking.podspec
+    for ROOT in ${ROOTS[@]} ; do
+        mkdir -p ~/.cocoapods/repos/master/Specs/${ROOT}/${TARGET}/${VERSION}
+        rm       ~/.cocoapods/repos/master/Specs/${ROOT}/${TARGET}/${VERSION}/* || echo
+        cat $TARGET.podspec |
+        sed -E "s/s.source[^\}]+\}/s.source           = { :git => '${ESCAPED_SOURCE}', :branch => \'${BRANCH}\' }/" > ~/.cocoapods/repos/master/Specs/${ROOT}/${TARGET}/${VERSION}/${TARGET}.podspec
+    done
 
-pod lib lint RxSwift.podspec
-pod lib lint RxCocoa.podspec
-pod lib lint RxBlocking.podspec
+done
+
+function validate() {
+    local PODSPEC=$1
+
+    pod lib lint $PODSPEC --verbose --no-clean --allow-warnings
+}
+
+for TARGET in ${TARGETS[@]}
+do
+
+validate ${TARGET}.podspec
+
+done

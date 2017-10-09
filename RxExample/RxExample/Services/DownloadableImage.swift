@@ -2,22 +2,21 @@
 //  DownloadableImage.swift
 //  RxExample
 //
-//  Created by Vodovozov Gleb on 31.10.2015.
+//  Created by Vodovozov Gleb on 10/31/15.
 //  Copyright © 2015 Krunoslav Zaher. All rights reserved.
 //
 
-import Foundation
 #if !RX_NO_MODULE
 import RxSwift
 #endif
 #if os(iOS)
     import UIKit
-#elseif os(OSX)
+#elseif os(macOS)
     import Cocoa
 #endif
 
 enum DownloadableImage{
-    case Content(image:Image)
-    case OfflinePlaceholder
+    case content(image:Image)
+    case offlinePlaceholder
 
 }
